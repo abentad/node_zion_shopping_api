@@ -1,0 +1,33 @@
+###
+#user sign up route
+POST http://localhost:3000/user/signup HTTP/1.1
+Content-Type : application/json
+
+{
+    "username": "mike",
+    "email": "mike@gmail.com",
+    "password": "12345678"
+} 
+
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNTIyNzdjZDIwMTFkMTk3NjQxYWVlNCIsImlhdCI6MTYzMjc3NDAxMiwiZXhwIjoxNjMzMzc4ODEyfQ.6hMuEnykFypAWfRO6wXRMCQ8v1txEOs-KuiFequ4-K8
+
+###
+#user sign in route 
+POST http://localhost:3000/user/signin HTTP/1.1
+Content-Type : application/json
+
+{
+    "email": "ab@gmail.com",
+    "password": "12345678"
+} 
+
+
+###
+#Get products
+GET http://localhost:3000/data/products?page=1&limit=20 HTTP/1.1
+x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNWIzMDAwM2I0YTE4NWVmMGQ2OTA4ZiIsImlhdCI6MTYzMzQ1NTg0MiwiZXhwIjoxNjY0OTkxODQyfQ.lrTfhBmI2OOt1yMlCUu-CKxYIFv_biTgwbnkFOht3dQ
+
+###
+#Get userInfo By signing in with token
+GET http://localhost:3000/user/signinwithtoken HTTP/1.1
+x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNTIyY2Q5ZWE0NTk4NjQ3MTBkYjE2MCIsImlhdCI6MTYzMjkzMDE2MywiZXhwIjoxNjMzNTM0OTYzfQ.zwFhY3_4CeB-0s1YULJL8se4GFfukBHbZrboMN0QZEs
