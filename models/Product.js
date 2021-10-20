@@ -9,6 +9,10 @@ const productSchema = new mongoose.Schema({
         required: [true, 'poster name required'],
         lowercase: true
     },
+    posterProfileAvatar:{
+        type: String,
+        required: [true, 'Please provide a poster profile avatar']
+    },
     posterPhoneNumber:{
         type: String,
         required: [true, 'please provide a phone number']
