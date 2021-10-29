@@ -37,7 +37,7 @@ const productSchema = new mongoose.Schema({
         required: [true, 'Please enter product price']
     },
     datePosted: {
-        type: Date,
+        type: String,
         required: true
     },
     productImages: [
