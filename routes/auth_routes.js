@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const {signup, signin, signinwithtoken } = require('../controller/auth_controller');
+const {signup, signin, signinwithtoken, updateUserInfo } = require('../controller/auth_controller');
 const { requireAuth } = require('../middleware/auth_middleware');
 const path = require('path');
 const sharp = require('sharp');
@@ -29,6 +29,8 @@ const modifyProfileImage =  async (req, res, next) => {
 router.post('/signup', upload.single('profile') , modifyProfileImage, signup);
 router.post('/signin', signin);
 router.get('/signinwithtoken', requireAuth, signinwithtoken);
+router.put('/update', updateUserInfo);
+
 
 
 module.exports = router;

@@ -80,6 +80,15 @@ module.exports = {
             res.status(400).json({ error });
         }
         
+    },
+    updateUserInfo: (req,res)=>{
+        const { id, username, email, phoneNumber, password, profile_image, dateJoined} = req.body;
+        mysqlConnection.query("UPDATE users SET username='"+ username +"',email='"+ email +"',phoneNumber='"+ phoneNumber +"',password='"+ password +"',profile_image='"+ profile_image +"'\
+        ,dateJoined='"+ dateJoined +"' WHERE id = ?",[id]
+        ,(error, rows, fields)=>{
+            if(error) console.log(error);
+            else res.json('Updated successfully');
+        });
     }
 }
 
