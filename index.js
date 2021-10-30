@@ -18,7 +18,7 @@ app.use('/uploads/products', express.static('uploads/products'));
 
 
 
-//connecting to mongodb and starting server
+//connecting to mongodb and starting serve
 const port = process.env.PORT || 3000;
 const mongooseUrl = "mongodb+srv://abeni:19875321ab@liyucluster.dqtyi.mongodb.net/auth?retryWrites=true&w=majority";
 // app.listen(port,()=> console.log('server started.'));
