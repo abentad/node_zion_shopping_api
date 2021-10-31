@@ -1,9 +1,10 @@
 const { requireAuth } = require('../middleware/auth_middleware');
-
+const path = require('path');
+const mysqlConnection = require('../utils/database');
 const router = require('express').Router();
 const upload = require('../utils/multer');
 const sharp = require('sharp');
-const Product = require('../models/Product');
+const fs = require('fs');
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
@@ -28,61 +29,104 @@ const modifyProductImage =  async (req, res, next) => {
     next();
 }
 
- 
+//for posting a new product
 router.post('/post', requireAuth, uploadProductImages, modifyProductImage, async (req,res)=>{
     console.log('product post called');
-    const { name, description, category, price, datePosted, posterId, posterName, posterPhoneNumber, posterProfileAvatar } = req.body;
+    const { name, price, description, category, image, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber} = req.body;
+    let insertedProductId;
+    let insertedProductImageId;
     console.log('files', req.files);
+    console.log('main image', req.files.path[0]);
     try {
-        const product = await Product.create({posterId, posterName, posterPhoneNumber, posterProfileAvatar, name, description, category, price, datePosted, productImages: req.files.path});
-        const responseData = {name: product.name };
-        res.status(201).json( responseData );
+        mysqlConnection.query("INSERT INTO products(name, price, description, category, image, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber)\
+        VALUES ('"+ name +"','"+price+"','" +description+"','"+category+"','"+req.files.path[0]+"','"+datePosted+"','"+posterId+"','"+posterName+"','"+posterProfileAvatar+"','"+posterPhoneNumber+"')"
+        ,(error, rows, fields)=>{
+            if(error) console.log(error);
+            else{
+                insertedProductId = rows.insertId;
+                let images = [];
+                try {
+                    for(let u = 0; u < req.files.path.length; u++){
+                        images.push(req.files.path[u]);
+                    }
+                } catch (error) {
+                    console.log(`cannot parse because: ${error.message}`);
+                }
+                console.log(`found ${images.length} images`);
+                mysqlConnection.query("INSERT INTO images (id, url) VALUES ?", [images.map(image => [insertedProductId, image])] , (err, rows, fields) => {
+                    if (err) throw err;
+                    else{
+                        insertedProductImageId = rows.insertId;
+                        res.json({insertedProductId});
+                    }         
+                });
+            }
+        });
     } catch (error) {
         console.log(error);
         res.status(400).json({error});
     }
 });
 
-router.get('/products', requireAuth, paginatedResults(Product), async (req,res)=> {
+//for getting all products
+router.get('/products', requireAuth, async (req,res)=> {
     console.log('get products called');
-    const result = res.paginatedResults;
-    res.status(200).json( result );
+    const { size } = req.query;
+    const page = req.query.page ? Number(req.query.page) : 1;
+    mysqlConnection.query("SELECT * FROM products",(error, rows, fields)=>{
+        const resLength = rows.length;
+        const totalPages = Math.ceil(resLength / size);        
+        if(error) console.log(error);
+        if(page > totalPages) res.redirect('/products?page='+ encodeURIComponent(totalPages) + '&size='+ encodeURIComponent(size));
+        else if(page < 1)  res.redirect('/products?page='+ encodeURIComponent('1') + '&size='+ encodeURIComponent(size));
+        const startPoint = (page - 1) * size;
+        mysqlConnection.query(`SELECT * FROM products ORDER BY id DESC LIMIT ${startPoint},${size}`,(error, rows, fields)=>{
+            if(error) console.log(error);
+            let iterator = (page - 5) < 1 ? 1 : page - 5;
+            let endPoint = (iterator + 9) <= totalPages ? (iterator + 9) : page + (totalPages - page);
+            if(endPoint < (page + 4)){
+                iterator -= (page + 4) - totalPages;
+            }
+            res.json({rows, totalPages});
+        });
+    });
 });
 
-function  paginatedResults(model){
-    return async (req,res,next)=>{
-        const page = parseInt(req.query.page);
-        const limit = parseInt(req.query.limit);
-    
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit; 
-        
-        const results = {};
+//get specific product by its id
+router.get('/product',(req,res)=>{
+    const { id } = req.query;
+    mysqlConnection.query('SELECT * FROM products WHERE id = ?', [id], (error, rows, fields)=>{
+        if(error) console.log(error);
+        else res.json(rows[0]);
+    });
+});
 
-        if(endIndex < await model.countDocuments().exec()){
-            results.next = {
-                page: page + 1,
-                limit: limit
+//delete product by its id
+router.delete('/product',(req,res)=>{
+    const { id } = req.query;
+    mysqlConnection.query('SELECT * FROM images WHERE id = ?', [id], (error, rows, fields)=>{
+        if(error) console.log(error);
+        else {
+            for(let v = 0; v < rows.length; v++){
+                try {
+                    const filePath = rows[v]['url'];
+                    fs.unlink(filePath, ()=>{console.log(`${filePath} has been removed from server.`)});
+                } catch (error) {   
+                    console.log(error.message);
+                }
             }
         }
-       
-        if(startIndex > 0){
-            results.previous = {
-                page: page - 1,
-                limit: limit
-            }
+    });
+    mysqlConnection.query('DELETE FROM images WHERE id = ?', [id], (error, rows, fields)=>{
+        if(error) console.log(error);
+        else {
+            mysqlConnection.query('DELETE FROM products WHERE id = ?', [id], (error, rows, fields)=>{
+                if(error) console.log(error);
+                else res.status(200).json({message: 'Deleted Successfully'});
+            });
         }
-        try {  
-            const dataResults = await model.find().limit(limit).skip(startIndex).exec(); 
-            results.results = dataResults.reverse();
-            res.paginatedResults = results;
-            next();
-        } catch (error) {
-            res.status(500).json({error: error.message});
-        }
-        
-    }
-}
+    });
+});
 
 
 module.exports = router;
