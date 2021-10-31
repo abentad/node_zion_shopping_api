@@ -1,12 +1,20 @@
 const router = require('express').Router();
-const {signup, signin, signinwithtoken, updateUserInfo } = require('../controller/auth_controller');
 const { requireAuth } = require('../middleware/auth_middleware');
 const path = require('path');
 const sharp = require('sharp');
 const upload = require('../utils/multer');
+const jwt = require('jsonwebtoken'); 
+const mysqlConnection = require('../utils/database');
+const bcrypt = require('bcrypt');
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
+}
+
+//creates a token using the users id it is set to 365 days
+const maxAge = 365 * 24 * 60 * 60;
+const createToken = (id) => {
+    return jwt.sign({ id }, 'key to hash the jwt with', {expiresIn: maxAge});
 }
 
 
@@ -26,10 +34,84 @@ const modifyProfileImage =  async (req, res, next) => {
     next();
 }
 
-router.post('/signup', upload.single('profile') , modifyProfileImage, signup);
-router.post('/signin', signin);
-router.get('/signinwithtoken', requireAuth, signinwithtoken);
-router.put('/update', updateUserInfo);
+//
+router.post('/signup', upload.single('profile') , modifyProfileImage, async (req,res)=>{
+    console.log('sign up called'); 
+    let { username, email, password, phoneNumber, dateJoined } = req.body;
+    try {
+        const salt = await bcrypt.genSalt();
+        password = await bcrypt.hash(password, salt);
+        mysqlConnection.query("INSERT INTO users(username, email, phoneNumber, password, profile_image, dateJoined)\
+        VALUES ('"+ username +"','"+email+"','" +phoneNumber+"','"+password+"','"+req.file.path+"','"+dateJoined+"')"
+        ,(error, rows, fields)=>{
+            if(error)   console.log(error);
+            else{
+                const token = createToken(rows.insertId);
+                const responseData = {userId: rows.insertId, username, email, profile: req.file.path, phoneNumber, dateJoined, token };
+                res.status(201).json( responseData );
+            }
+        });
+        
+    } catch (error) {
+        res.status(400).json({ error });
+    }
+});
+
+//
+router.post('/signin', (req,res)=>{
+    console.log('sign in called'); 
+    const { email, password } = req.body;
+    try {
+        mysqlConnection.query('SELECT * FROM users WHERE email = ?', [email],async (error, rows, fields)=>{
+            if(error) console.log(error);
+            else {
+                const user = rows[0];
+                if(user){
+                    const auth = await bcrypt.compare(password, user['password']).catch(e=>console.log(e.message));
+                    if(auth){
+                        const token = createToken(user['id']);
+                        const responseData = {userId: user.id, username: user.username, email: user.email, profile: user.profile_image, phoneNumber: user.phoneNumber, dateJoined: user.dateJoined, token: token };
+                        res.status(200).json( responseData );
+                    }
+                    res.status(400).json({message: "Incorrect password"});
+                }else if(rows == []){
+                    res.status(400).json({message: "Incorrect email"});
+                }
+                else{
+                    res.status(400).json({message: "Incorrect email"});
+                }
+            }
+        });
+
+    } catch (error) {
+        res.status(400).json({ error });
+    }
+});
+router.get('/signinwithtoken', requireAuth, async(req,res)=>{
+    try {
+        mysqlConnection.query('SELECT * FROM users WHERE id = ?', [req.userId], (error, rows, fields)=>{
+            if(error) console.log(error);
+            else {
+                const user = rows[0];
+                const responseData = {userId: user['id'], username: user['username'], email: user['email'], profile: user['profile_image'], phoneNumber: user['phoneNumber'], dateJoined: user['dateJoined'] };
+                res.status(200).json(responseData);
+            }
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ error });
+    }
+    
+});
+router.put('/update', (req,res)=>{
+    const { id, username, email, phoneNumber, password, profile_image, dateJoined} = req.body;
+    mysqlConnection.query("UPDATE users SET username='"+ username +"',email='"+ email +"',phoneNumber='"+ phoneNumber +"',password='"+ password +"',profile_image='"+ profile_image +"'\
+    ,dateJoined='"+ dateJoined +"' WHERE id = ?",[id]
+    ,(error, rows, fields)=>{
+        if(error) console.log(error);
+        else res.json('Updated successfully');
+    });
+});
 
 
 
