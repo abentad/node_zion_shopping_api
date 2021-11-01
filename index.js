@@ -20,10 +20,12 @@ app.get('/',(req,res)=>{
 app.use('/uploads/profiles', express.static('uploads/profiles'));
 app.use('/uploads/products', express.static('uploads/products'));
 
-
-
 //connecting to mongodb and starting serve
+
+//for local
 // const port = process.env.PORT || 3000;
 // app.listen(port, ()=> console.log(`Server started at http://localhost:${port}`));
+
+//for public
 app.listen();
 
