@@ -32,14 +32,12 @@ const modifyProductImage =  async (req, res, next) => {
 //for posting a new product
 router.post('/post', requireAuth, uploadProductImages, modifyProductImage, async (req,res)=>{
     console.log('product post called');
-    const { name, price, description, category, image, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber} = req.body;
+    const { name, isPending, price, description, category, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber} = req.body;
     let insertedProductId;
     let insertedProductImageId;
-    console.log('files', req.files);
-    console.log('main image', req.files.path[0]);
     try {
-        mysqlConnection.query("INSERT INTO products(name, price, description, category, image, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber)\
-        VALUES ('"+ name +"','"+price+"','" +description+"','"+category+"','"+req.files.path[0]+"','"+datePosted+"','"+posterId+"','"+posterName+"','"+posterProfileAvatar+"','"+posterPhoneNumber+"')"
+        mysqlConnection.query("INSERT INTO products(name, isPending, price, description, category, image, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber)\
+        VALUES ('"+ name +"','"+ isPending +"','"+price+"','" +description+"','"+category+"','"+req.files.path[0]+"','"+datePosted+"','"+posterId+"','"+posterName+"','"+posterProfileAvatar+"','"+posterPhoneNumber+"')"
         ,(error, rows, fields)=>{
             if(error) console.log(error);
             else{
@@ -57,7 +55,7 @@ router.post('/post', requireAuth, uploadProductImages, modifyProductImage, async
                     if (err) throw err;
                     else{
                         insertedProductImageId = rows.insertId;
-                        res.json({insertedProductId});
+                        res.status(201).json({insertedProductId});
                     }         
                 });
             }
@@ -71,16 +69,18 @@ router.post('/post', requireAuth, uploadProductImages, modifyProductImage, async
 //for getting all products
 router.get('/products', requireAuth, async (req,res)=> {
     console.log('get products called');
+    const pendingString = 'false';
     const { size } = req.query;
     const page = req.query.page ? Number(req.query.page) : 1;
-    mysqlConnection.query("SELECT * FROM products",(error, rows, fields)=>{
+    mysqlConnection.query("SELECT * FROM products WHERE isPending = ?", [pendingString] ,(error, rows, fields)=>{
         const resLength = rows.length;
+        console.log(`products found: ${resLength}`);
         const totalPages = Math.ceil(resLength / size);        
         if(error) console.log(error);
         if(page > totalPages) res.redirect('/products?page='+ encodeURIComponent(totalPages) + '&size='+ encodeURIComponent(size));
         else if(page < 1)  res.redirect('/products?page='+ encodeURIComponent('1') + '&size='+ encodeURIComponent(size));
         const startPoint = (page - 1) * size;
-        mysqlConnection.query(`SELECT * FROM products ORDER BY id DESC LIMIT ${startPoint},${size}`,(error, rows, fields)=>{
+        mysqlConnection.query(`SELECT * FROM products WHERE isPending = ? ORDER BY id DESC LIMIT ${startPoint},${size}`, [pendingString] ,(error, rows, fields)=>{
             if(error) console.log(error);
             let iterator = (page - 5) < 1 ? 1 : page - 5;
             let endPoint = (iterator + 9) <= totalPages ? (iterator + 9) : page + (totalPages - page);
