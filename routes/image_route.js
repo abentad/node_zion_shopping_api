@@ -6,20 +6,26 @@ const fs = require('fs');
 router.get('/',(req,res)=>{
     const { id } = req.query;
     mysqlConnection.query('SELECT * FROM images WHERE id = ?', [id], (error, rows, fields)=>{
+        var updatedView;
+        var oldView;
+        var images;
         if(error) console.log(error);
         else {
+            images = rows;
             //for updating views when product images are viewed
             mysqlConnection.query('SELECT views FROM products WHERE id = ?', [id], (error, rows, fields)=>{
                 if(error) console.log(error);
                 else {
-                    const oldView = rows[0]['views'];
-                    const updatedView = oldView + 1;
+                    oldView = rows[0]['views'];
+                    updatedView = oldView + 1;
                     mysqlConnection.query('UPDATE products SET views = ? WHERE id = ?', [ updatedView, id ], (error, rows, fields)=>{
                         if(error) console.log(error);
+                        else{
+                            res.status(200).json({updatedView: updatedView, rows: images});
+                        }
                     });
                 }
             });
-            res.status(200).json(rows);
         }
     });
 });
