@@ -44,7 +44,10 @@ router.post('/signup', upload.single('profile') , modifyProfileImage, async (req
         mysqlConnection.query("INSERT INTO users(username, email, phoneNumber, password, profile_image, dateJoined)\
         VALUES ('"+ username +"','"+email+"','" +phoneNumber+"','"+password+"','"+req.file.path+"','"+dateJoined+"')"
         ,(error, rows, fields)=>{
-            if(error)   console.log(error);
+            if(error){
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }
             else{
                 const token = createToken(rows.insertId);
                 const responseData = {userId: rows.insertId, username, email, profile: req.file.path, phoneNumber, dateJoined, token };
@@ -53,7 +56,8 @@ router.post('/signup', upload.single('profile') , modifyProfileImage, async (req
         });
         
     } catch (error) {
-        res.status(400).json({ error });
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
     }
 });
 
@@ -63,7 +67,10 @@ router.post('/signin', (req,res)=>{
     const { email, password } = req.body;
     try {
         mysqlConnection.query('SELECT * FROM users WHERE email = ?', [email],async (error, rows, fields)=>{
-            if(error) console.log(error);
+            if(error) {
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }
             else {
                 const user = rows[0];
                 if(user){
@@ -84,13 +91,17 @@ router.post('/signin', (req,res)=>{
         });
 
     } catch (error) {
-        res.status(400).json({ error });
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
     }
 });
 router.get('/signinwithtoken', requireAuth, async(req,res)=>{
     try {
         mysqlConnection.query('SELECT * FROM users WHERE id = ?', [req.userId], (error, rows, fields)=>{
-            if(error) console.log(error);
+            if(error) {
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }
             else {
                 const user = rows[0];
                 const responseData = {userId: user['id'], username: user['username'], email: user['email'], profile: user['profile_image'], phoneNumber: user['phoneNumber'], dateJoined: user['dateJoined'] };
@@ -98,21 +109,59 @@ router.get('/signinwithtoken', requireAuth, async(req,res)=>{
             }
         });
     } catch (error) {
+        res.status(500).json({message: "something went wrong"});
         console.log(error);
-        res.status(400).json({ error });
     }
-    
-});
-router.put('/update', (req,res)=>{
-    const { id, username, email, phoneNumber, password, profile_image, dateJoined} = req.body;
-    mysqlConnection.query("UPDATE users SET username='"+ username +"',email='"+ email +"',phoneNumber='"+ phoneNumber +"',password='"+ password +"',profile_image='"+ profile_image +"'\
-    ,dateJoined='"+ dateJoined +"' WHERE id = ?",[id]
-    ,(error, rows, fields)=>{
-        if(error) console.log(error);
-        else res.json('Updated successfully');
-    });
 });
 
+
+router.put('/update', (req,res)=>{
+    const { id, username, email, phoneNumber, password, profile_image, dateJoined} = req.body;
+    try {
+        mysqlConnection.query("UPDATE users SET username='"+ username +"',email='"+ email +"',phoneNumber='"+ phoneNumber +"',password='"+ password +"',profile_image='"+ profile_image +"'\
+        ,dateJoined='"+ dateJoined +"' WHERE id = ?",[id]
+        ,(error, rows, fields)=>{
+            if(error) {
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }
+            else res.status(200).json('Updated successfully');
+        });
+    } catch (error) {
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
+    }
+});
+
+
+router.get('/seller', requireAuth, (req,res)=>{
+    const { id } = req.query;
+    try {
+        mysqlConnection.query("SELECT * FROM users WHERE id = ?", [id], (error, rows, fields)=>{
+            if(error){
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }else{
+                const user = rows[0];
+                let sellerProducts;
+                const responseData = {userId: user['id'], username: user['username'], email: user['email'], profile: user['profile_image'], phoneNumber: user['phoneNumber'], dateJoined: user['dateJoined'] };
+                mysqlConnection.query("SELECT * FROM products WHERE posterId = ?", [id], (error, rows, fields)=>{
+                    if(error){
+                        res.status(500).json({message: "something went wrong"});
+                        console.log(error);
+                    }else{
+                        sellerProducts = rows;
+                        res.status(200).json({responseData, sellerProducts});
+                    }
+                });  
+            }
+        });
+    } catch (error) {
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
+    }
+
+})
 
 
 module.exports = router;
