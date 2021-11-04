@@ -136,6 +136,7 @@ router.put('/update', (req,res)=>{
 
 router.get('/seller', requireAuth, (req,res)=>{
     const { id } = req.query;
+    const isPendingString = "false";
     try {
         mysqlConnection.query("SELECT * FROM users WHERE id = ?", [id], (error, rows, fields)=>{
             if(error){
@@ -145,7 +146,7 @@ router.get('/seller', requireAuth, (req,res)=>{
                 const user = rows[0];
                 let sellerProducts;
                 const responseData = {userId: user['id'], username: user['username'], email: user['email'], profile: user['profile_image'], phoneNumber: user['phoneNumber'], dateJoined: user['dateJoined'] };
-                mysqlConnection.query("SELECT * FROM products WHERE posterId = ?", [id], (error, rows, fields)=>{
+                mysqlConnection.query("SELECT * FROM products WHERE posterId = ? AND isPending = ?", [id, isPendingString], (error, rows, fields)=>{
                     if(error){
                         res.status(500).json({message: "something went wrong"});
                         console.log(error);
