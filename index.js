@@ -33,8 +33,6 @@ io.on('connection', socket => {
   
     //for sending message to who are inside the given room users
     socket.on('send-message-to-room', (data) => {
-      // console.log(data['roomName']);
-      // console.log(data['message']);
       socket.to(data['roomName']).emit('receive-message-from-room', data['message']);
     });
   

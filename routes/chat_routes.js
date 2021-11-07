@@ -38,4 +38,29 @@ router.get('/message', requireAuth, async (req,res)=>{
     }
 });
 
+//add new message
+router.post('/message', requireAuth, async(req,res)=>{
+    const { conversationId, senderId, senderName, messageText, timeSent} = req.body;
+    try {
+        mysqlConnection.query("INSERT INTO messages(conversationId, senderId, senderName, messageText, timeSent)\
+         VALUES('"+ conversationId +"','"+ senderId +"','"+ senderName +"','"+messageText+"','" +timeSent+"')",(error,rows,fields)=>{
+            if(error){
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }else{
+                mysqlConnection.query("SELECT * FROM messages WHERE id = ?", [rows['insertId']], (error, rows, fields)=>{
+                    if(error){
+                        res.status(500).json({message: "something went wrong"});
+                        console.log(error);
+                    }else{
+                        res.status(201).json(rows[0]);
+                    }
+                });
+            }
+        });
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
 module.exports = router;
