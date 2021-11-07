@@ -158,11 +158,11 @@ router.get('/sendNotification', requireAuth, async(req,res)=>{
             console.log('successfully sent message', response);
             res.status(200).json(response);
         }).catch((error)=> {
-            res.status(500).json(error);
-            console.log(error);
+            res.status(500).json({message: "something went wrong from then catch"});
+            console.log({message: "somehting went wrong from then catch"});
         });
     } catch (error) {
-        res.status(500).json(error);
+        res.status(500).json({message: "somehting went wrong from try catch"});
         console.log(error);
     }
 });
