@@ -7,6 +7,13 @@ const jwt = require('jsonwebtoken');
 const mysqlConnection = require('../utils/database');
 const bcrypt = require('bcrypt');
 
+//for FCM notifications
+var admin = require("firebase-admin");
+var serviceAccount = require("../notification/serviceAccountKey.json");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
 }
@@ -37,12 +44,12 @@ const modifyProfileImage =  async (req, res, next) => {
 //
 router.post('/signup', upload.single('profile') , modifyProfileImage, async (req,res)=>{
     console.log('sign up called'); 
-    let { username, email, password, phoneNumber, dateJoined } = req.body;
+    let { username, email, password, phoneNumber, dateJoined, deviceToken } = req.body;
     try {
         const salt = await bcrypt.genSalt();
         password = await bcrypt.hash(password, salt);
-        mysqlConnection.query("INSERT INTO users(username, email, phoneNumber, password, profile_image, dateJoined)\
-        VALUES ('"+ username +"','"+email+"','" +phoneNumber+"','"+password+"','"+req.file.path+"','"+dateJoined+"')"
+        mysqlConnection.query("INSERT INTO users(deviceToken, username, email, phoneNumber, password, profile_image, dateJoined)\
+        VALUES ('"+ deviceToken +"','"+ username +"','"+email+"','" +phoneNumber+"','"+password+"','"+req.file.path+"','"+dateJoined+"')"
         ,(error, rows, fields)=>{
             if(error){
                 res.status(500).json({message: "something went wrong"});
@@ -50,11 +57,10 @@ router.post('/signup', upload.single('profile') , modifyProfileImage, async (req
             }
             else{
                 const token = createToken(rows.insertId);
-                const responseData = {userId: rows.insertId, username, email, profile: req.file.path, phoneNumber, dateJoined, token };
+                const responseData = {userId: rows.insertId, username, email, profile: req.file.path, phoneNumber, dateJoined, token, deviceToken };
                 res.status(201).json( responseData );
             }
         });
-        
     } catch (error) {
         res.status(500).json({message: "something went wrong"});
         console.log(error);
@@ -64,7 +70,7 @@ router.post('/signup', upload.single('profile') , modifyProfileImage, async (req
 //
 router.post('/signin', (req,res)=>{
     console.log('sign in called'); 
-    const { email, password } = req.body;
+    const { email, password, deviceToken } = req.body;
     try {
         mysqlConnection.query('SELECT * FROM users WHERE email = ?', [email],async (error, rows, fields)=>{
             if(error) {
@@ -77,7 +83,13 @@ router.post('/signin', (req,res)=>{
                     const auth = await bcrypt.compare(password, user['password']).catch(e=>console.log(e.message));
                     if(auth){
                         const token = createToken(user['id']);
-                        const responseData = {userId: user.id, username: user.username, email: user.email, profile: user.profile_image, phoneNumber: user.phoneNumber, dateJoined: user.dateJoined, token: token };
+                        mysqlConnection.query("UPDATE users SET deviceToken='"+ deviceToken +"' WHERE id = ?",[rows[0]['id']],(error, rows, fields)=>{
+                            if(error) {
+                                res.status(500).json({message: "something went wrong"});
+                                console.log(error);
+                            }
+                        });
+                        const responseData = {userId: user.id, username: user.username, email: user.email, profile: user.profile_image, phoneNumber: user.phoneNumber, dateJoined: user.dateJoined, token: token, deviceToken: deviceToken };
                         res.status(200).json( responseData );
                     }
                     res.status(400).json({message: "Incorrect password"});
@@ -107,6 +119,46 @@ router.get('/signinwithtoken', requireAuth, async(req,res)=>{
                 const responseData = {userId: user['id'], username: user['username'], email: user['email'], profile: user['profile_image'], phoneNumber: user['phoneNumber'], dateJoined: user['dateJoined'] };
                 res.status(200).json(responseData);
             }
+        });
+    } catch (error) {
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
+    }
+});
+
+router.get('/getDeviceToken', requireAuth, async(req,res)=>{
+    const { userId } = req.query;
+    try {
+        mysqlConnection.query('SELECT deviceToken FROM users WHERE id = ?', [userId], (error, rows, fields)=>{
+            if(error) {
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }
+            else {
+                res.status(200).json(rows[0]);
+            }
+        });
+    } catch (error) {
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
+    }
+});
+
+router.get('/sendNotification', requireAuth, async(req,res)=>{
+    const { deviceToken, messageTitle, messageBody } = req.query;
+
+    try {
+        admin.messaging().send({
+            token: deviceToken,
+            notification: {
+                title: messageTitle,
+                body: messageBody
+            }
+        }).then((response)=>{
+            console.log('successfully sent message', response);
+            res.status(200).json(response);
+        }).catch((error)=> {
+            console.log(error);
         });
     } catch (error) {
         res.status(500).json({message: "something went wrong"});
