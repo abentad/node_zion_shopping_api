@@ -135,7 +135,11 @@ router.get('/getDeviceToken', requireAuth, async(req,res)=>{
                 console.log(error);
             }
             else {
-                res.status(200).json(rows[0]);
+                if(rows[0] == undefined){
+                    res.status(201).json({message: "no device token"});
+                }else{
+                    res.status(200).json(rows[0]);  
+                }
             }
         });
     } catch (error) {
@@ -147,24 +151,15 @@ router.get('/getDeviceToken', requireAuth, async(req,res)=>{
 router.get('/sendNotification', requireAuth, async(req,res)=>{
     const { deviceToken, messageTitle, messageBody } = req.query;
 
-    try {
-        admin.messaging().send({
-            token: deviceToken,
-            notification: {
-                title: messageTitle,
-                body: messageBody
-            }
-        }).then((response)=>{
-            console.log('successfully sent message', response);
-            res.status(200).json(response);
-        }).catch((error)=> {
-            res.status(500).json(error);
-            console.log(error);
-        });
-    } catch (error) {
-        res.status(500).json(error);
-        console.log(error);
-    }
+    admin.messaging().send({
+        token: deviceToken,
+        notification: {
+            title: messageTitle,
+            body: messageBody
+        }
+    }).then((response)=>{
+        res.status(200).json(response);
+    }).catch((error)=> console.log(error));
 });
 
 
@@ -215,7 +210,20 @@ router.get('/seller', requireAuth, (req,res)=>{
         console.log(error);
     }
 
-})
+});
+
+router.get('/signout', requireAuth, (req,res)=>{
+    const { id } = req.query;
+    const deviceToken = "";
+    mysqlConnection.query("UPDATE users SET deviceToken='"+ deviceToken +"' WHERE id = ?",[id],(error, rows, fields)=>{
+        if(error) {
+            res.status(500).json({message: "something went wrong"});
+            console.log(error);
+        }else{
+            res.status(200).json({message: "remove successfully"});
+        }
+    });
+});
 
 
 module.exports = router;

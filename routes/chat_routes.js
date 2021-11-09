@@ -21,6 +21,24 @@ router.get('/conv', requireAuth, async (req,res)=>{
     }
 });
 
+//get conversation of a user
+router.post('/conv', requireAuth, async (req,res)=>{
+    const { senderId, receiverId, senderName, receiverName, senderProfileUrl, receiverProfileUrl, lastMessage, lastMessageTimeSent, lastMessageSenderId } = req.body;
+    try {
+        mysqlConnection.query("INSERT INTO conversations(senderId, receiverId, senderName, receiverName, senderProfileUrl, receiverProfileUrl, lastMessage, lastMessageTimeSent, lastMessageSenderId)\
+         values('"+ senderId +"','"+ receiverId +"','"+ senderName +"','"+receiverName+"','" +senderProfileUrl+"','"+ receiverProfileUrl +"','"+ lastMessage +"','"+lastMessageTimeSent+"','" +lastMessageSenderId+"')", (error, rows, fields)=>{
+            if(error){
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }else{
+                res.status(201).json(rows.insertId);
+            }
+        });
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
 //get messages of a user by conversationid
 router.get('/message', requireAuth, async (req,res)=>{
     const { convId } = req.query;
