@@ -43,12 +43,12 @@ GET http://localhost:3000/chat/conv/check?sId=21&rId=19 HTTP/1.1
 x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTksImlhdCI6MTYzNjYxOTIxOSwiZXhwIjoxNjY4MTU1MjE5fQ.eA3AxIWB8lH71yvxNjTXSDR_BdjnQhoucIyfjOHAuEk
 
 ###
-#user sign in route 
+#update conversation info
 PUT http://localhost:3000/chat/conv/updlmsg HTTP/1.1
 Content-Type : application/json
 
 {
-    "convId": "4",
+    "convId": "26",
     "lastMessage": "updated last message",
     "lastMessageTimeSent": "2021-11-07 12:36:17.625196",
     "lastMessageSenderId": "20"

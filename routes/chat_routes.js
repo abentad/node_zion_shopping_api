@@ -67,10 +67,21 @@ router.post('/conv', requireAuth, async (req,res)=>{
         mysqlConnection.query("INSERT INTO conversations(senderId, receiverId, senderName, receiverName, senderProfileUrl, receiverProfileUrl, lastMessage, lastMessageTimeSent, lastMessageSenderId)\
          values('"+ senderId +"','"+ receiverId +"','"+ senderName +"','"+receiverName+"','" +senderProfileUrl+"','"+ receiverProfileUrl +"','"+ lastMessage +"','"+lastMessageTimeSent+"','" +lastMessageSenderId+"')", (error, rows, fields)=>{
             if(error){
-                res.status(500).json({message: "something went wrong"});
+                res.status(500).json({message: "something went wrong when creating new conversation"});
                 console.log(error);
             }else{
-                res.status(201).json(rows.insertId);
+                try {
+                    mysqlConnection.query('SELECT * FROM conversations WHERE id = ?', [rows.insertId], (error, rows, fields)=>{
+                        if(error){
+                            res.status(500).json({message: "something went wrong when finding the conversation by id"});
+                            console.log(error);
+                        }else{
+                            res.status(200).json(rows[0]);
+                        }
+                    });
+                } catch (error) {
+                    res.status(500).json(error);
+                }    
             }
         });
     } catch (error) {
