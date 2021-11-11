@@ -17,7 +17,7 @@ POST http://localhost:3000/user/signin HTTP/1.1
 Content-Type : application/json
 
 {
-    "email": "ab@gmail.com",
+    "email": "abeni@gmail.com",
     "password": "12345678"
 } 
 
@@ -30,4 +30,26 @@ x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNWIzMDAwM2I0YT
 ###
 #Get userInfo By signing in with token
 GET http://localhost:3000/user/signinwithtoken HTTP/1.1
-x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNTIyY2Q5ZWE0NTk4NjQ3MTBkYjE2MCIsImlhdCI6MTYzMjkzMDE2MywiZXhwIjoxNjMzNTM0OTYzfQ.zwFhY3_4CeB-0s1YULJL8se4GFfukBHbZrboMN0QZEs
+x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTksImlhdCI6MTYzNjYxOTIxOSwiZXhwIjoxNjY4MTU1MjE5fQ.eA3AxIWB8lH71yvxNjTXSDR_BdjnQhoucIyfjOHAuEk
+
+##
+##
+##
+##
+##
+###
+#Get conversation By using senderId and receiverId
+GET http://localhost:3000/chat/conv/check?sId=21&rId=19 HTTP/1.1
+x-access-token : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTksImlhdCI6MTYzNjYxOTIxOSwiZXhwIjoxNjY4MTU1MjE5fQ.eA3AxIWB8lH71yvxNjTXSDR_BdjnQhoucIyfjOHAuEk
+
+###
+#user sign in route 
+PUT http://localhost:3000/chat/conv/updlmsg HTTP/1.1
+Content-Type : application/json
+
+{
+    "convId": "4",
+    "lastMessage": "updated last message",
+    "lastMessageTimeSent": "2021-11-07 12:36:17.625196",
+    "lastMessageSenderId": "20"
+} 

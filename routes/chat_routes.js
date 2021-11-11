@@ -4,7 +4,46 @@ const { fields } = require('../utils/multer');
 
 const router = require('express').Router();
 
-//get conversation of a user
+//check if there is a conversation between sender and receiver id
+router.get('/conv/check', requireAuth, async (req,res)=>{
+    const { sId, rId } = req.query;
+    try {
+        mysqlConnection.query('SELECT * FROM conversations WHERE senderId = ? AND receiverId = ? OR receiverId = ? AND senderId = ?', [sId, rId, sId, rId], (error, rows, fields)=>{
+            if(error){
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }else{
+                if(rows[0]){
+                    res.status(200).json(rows[0]);
+                }else{
+                    res.status(500).json({message: "no conv found."});
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json(error);
+    }
+});
+
+//updates last message in conversation
+router.put('/conv/updlmsg', (req,res)=>{
+    const { convId, lastMessage,lastMessageTimeSent, lastMessageSenderId } = req.body;
+    try {
+        mysqlConnection.query("UPDATE conversations SET lastMessage='"+ lastMessage +"',lastMessageTimeSent='"+ lastMessageTimeSent +"',lastMessageSenderId='"+ lastMessageSenderId +"' WHERE id = ?",[convId]
+        ,(error, rows, fields)=>{
+            if(error) {
+                res.status(500).json({message: "something went wrong"});
+                console.log(error);
+            }
+            else res.status(200).json('Updated successfully');
+        });
+    } catch (error) {
+        res.status(500).json({message: "something went wrong"});
+        console.log(error);
+    }
+});
+
+//get conversation of a user by user id
 router.get('/conv', requireAuth, async (req,res)=>{
     const { id } = req.query;
     try {
@@ -21,7 +60,7 @@ router.get('/conv', requireAuth, async (req,res)=>{
     }
 });
 
-//get conversation of a user
+//add new conversation of a user
 router.post('/conv', requireAuth, async (req,res)=>{
     const { senderId, receiverId, senderName, receiverName, senderProfileUrl, receiverProfileUrl, lastMessage, lastMessageTimeSent, lastMessageSenderId } = req.body;
     try {
