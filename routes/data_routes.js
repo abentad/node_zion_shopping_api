@@ -31,7 +31,7 @@ const modifyProductImage =  async (req, res, next) => {
 
 //for posting a new product
 router.post('/post', requireAuth, uploadProductImages, modifyProductImage, async (req,res)=>{
-    console.log('product post called');
+    // console.log('product post called');
     const { name, isPending, views, price, description, category, datePosted, posterId, posterName, posterProfileAvatar, posterPhoneNumber} = req.body;
     let insertedProductId;
     let insertedProductImageId;
@@ -75,14 +75,14 @@ router.post('/post', requireAuth, uploadProductImages, modifyProductImage, async
 
 //for getting all products that are not pending
 router.get('/products', requireAuth, async (req,res)=> {
-    console.log('get products called');
+    // console.log('get products called');
     const pendingString = 'false';
     const { size } = req.query;
     const page = req.query.page ? Number(req.query.page) : 1;
     try {
         mysqlConnection.query("SELECT * FROM products WHERE isPending = ?", [pendingString] ,(error, rows, fields)=>{
             const resLength = rows.length;
-            console.log(`products found: ${resLength}`);
+            // console.log(`products found: ${resLength}`);
             const totalPages = Math.ceil(resLength / size);        
             if(error) {
                 res.status(500).json({message: "something went wrong"});
@@ -113,14 +113,14 @@ router.get('/products', requireAuth, async (req,res)=> {
 
 //for getting all products based on product category
 router.get('/products/category', requireAuth, async (req,res)=> {
-    console.log('get products called');
+    // console.log('get products called');
     const pendingString = 'false';
     const { size, category } = req.query;
     const page = req.query.page ? Number(req.query.page) : 1;
     try {
         mysqlConnection.query("SELECT * FROM products WHERE isPending = ? AND category = ?", [pendingString, category] ,(error, rows, fields)=>{
             const resLength = rows.length;
-            console.log(`products found: ${resLength}`);
+            // console.log(`products found: ${resLength}`);
             const totalPages = Math.ceil(resLength / size);        
             if(error) {
                 res.status(500).json({message: "something went wrong"});
@@ -151,14 +151,14 @@ router.get('/products/category', requireAuth, async (req,res)=> {
 
 //for getting all products
 router.get('/products/pending', requireAuth, async (req,res)=> {
-    console.log('get products called');
+    // console.log('get products called');
     const pendingString = 'true';
     const { size } = req.query;
     const page = req.query.page ? Number(req.query.page) : 1;
     try {
         mysqlConnection.query("SELECT * FROM products WHERE isPending = ?", [pendingString] ,(error, rows, fields)=>{
             const resLength = rows.length;
-            console.log(`products found: ${resLength}`);
+            // console.log(`products found: ${resLength}`);
             const totalPages = Math.ceil(resLength / size);        
             if(error) {
                 res.status(500).json({message: "something went wrong"});

@@ -7,7 +7,8 @@ const mysqlConnection = createPool({
     user: 'root',
     password: '',
     database: 'shopri',
-    connectTimeout: 10
+    connectTimeout: 10,
+    multipleStatements: true
 });
 
 // const mysqlConnection = createPool({

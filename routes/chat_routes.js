@@ -4,6 +4,13 @@ const { fields } = require('../utils/multer');
 
 const router = require('express').Router();
 
+//for FCM notifications
+var admin = require("firebase-admin");
+var serviceAccount = require("../notification/serviceAccountKey.json");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 //check if there is a conversation between sender and receiver id
 router.get('/conv/check', requireAuth, async (req,res)=>{
     const { sId, rId } = req.query;
@@ -25,23 +32,7 @@ router.get('/conv/check', requireAuth, async (req,res)=>{
     }
 });
 
-//updates last message in conversation
-router.put('/conv/updlmsg', (req,res)=>{
-    const { convId, lastMessage,lastMessageTimeSent, lastMessageSenderId } = req.body;
-    try {
-        mysqlConnection.query("UPDATE conversations SET lastMessage='"+ lastMessage +"',lastMessageTimeSent='"+ lastMessageTimeSent +"',lastMessageSenderId='"+ lastMessageSenderId +"' WHERE id = ?",[convId]
-        ,(error, rows, fields)=>{
-            if(error) {
-                res.status(500).json({message: "something went wrong"});
-                console.log(error);
-            }
-            else res.status(200).json('Updated successfully');
-        });
-    } catch (error) {
-        res.status(500).json({message: "something went wrong"});
-        console.log(error);
-    }
-});
+
 
 //get conversation of a user by user id
 router.get('/conv', requireAuth, async (req,res)=>{
@@ -108,20 +99,31 @@ router.get('/message', requireAuth, async (req,res)=>{
 
 //add new message
 router.post('/message', requireAuth, async(req,res)=>{
-    const { conversationId, senderId, senderName, messageText, timeSent} = req.body;
+    const { conversationId, senderId, senderName, messageText, timeSent, receiverId} = req.body;
     try {
         mysqlConnection.query("INSERT INTO messages(conversationId, senderId, senderName, messageText, timeSent)\
-         VALUES('"+ conversationId +"','"+ senderId +"','"+ senderName +"','"+messageText+"','" +timeSent+"')",(error,rows,fields)=>{
+         VALUES('"+ conversationId +"','"+ senderId +"','"+ senderName +"','"+messageText+"','" +timeSent+"');\
+         UPDATE conversations SET lastMessage='"+ messageText +"',lastMessageTimeSent='"+ timeSent +"'\
+         ,lastMessageSenderId='"+ senderId +"' WHERE id = ?;\
+         SELECT deviceToken FROM users WHERE id = ?",[conversationId, receiverId],(error,rows,fields)=>{
             if(error){
                 res.status(500).json({message: "something went wrong"});
                 console.log(error);
             }else{
-                mysqlConnection.query("SELECT * FROM messages WHERE id = ?", [rows['insertId']], (error, rows, fields)=>{
+                let results = {};
+                if(rows[2][0]['deviceToken'] == undefined){
+                    console.log('device token is undefined');
+                    results.dvt = "none";
+                }else{
+                    results.dvt = rows[2][0]['deviceToken'];
+                }
+                mysqlConnection.query("SELECT * FROM messages WHERE id = ?", [rows[0]['insertId']], (error, rows, fields)=>{
                     if(error){
                         res.status(500).json({message: "something went wrong"});
                         console.log(error);
                     }else{
-                        res.status(201).json(rows[0]);
+                        results.msg = rows[0];
+                        res.status(201).json(results);
                     }
                 });
             }
@@ -129,6 +131,20 @@ router.post('/message', requireAuth, async(req,res)=>{
     } catch (error) {
         res.status(500).json(error);
     }
+});
+
+router.get('/sendNotification', requireAuth, async(req,res)=>{
+    const { deviceToken, messageTitle, messageBody } = req.query;
+
+    admin.messaging().send({
+        token: deviceToken,
+        notification: {
+            title: messageTitle,
+            body: messageBody
+        }
+    }).then((response)=>{
+        res.status(200).json(response);
+    }).catch((error)=> console.log(error));
 });
 
 module.exports = router;

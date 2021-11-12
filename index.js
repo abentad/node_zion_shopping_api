@@ -18,7 +18,7 @@ app.use('/chat', chatRoute);
 
 //socket connections 
 io.on('connection', socket => {
-    console.log('client connect...', socket.id);
+    // console.log('client connect...', socket.id);
   
     //for sending message to all users
     socket.on('send-message', (message) => {
@@ -28,7 +28,7 @@ io.on('connection', socket => {
     //for joining a room
     socket.on('join-room', (roomName)=> {
       socket.join(roomName);
-      console.log(`${socket.id} joined ${roomName}`);
+      // console.log(`${socket.id} joined ${roomName}`);
     });
   
     //for sending message to who are inside the given room users
@@ -38,7 +38,7 @@ io.on('connection', socket => {
   
     //for when user disconnects
     socket.on('disconnect', () => {
-      console.log('client disconnect...', socket.id);
+      // console.log('client disconnect...', socket.id);
     });
   
     //for when error occurs

@@ -7,12 +7,6 @@ const jwt = require('jsonwebtoken');
 const mysqlConnection = require('../utils/database');
 const bcrypt = require('bcrypt');
 
-//for FCM notifications
-var admin = require("firebase-admin");
-var serviceAccount = require("../notification/serviceAccountKey.json");
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
@@ -124,42 +118,6 @@ router.get('/signinwithtoken', requireAuth, async(req,res)=>{
         res.status(500).json({message: "something went wrong"});
         console.log(error);
     }
-});
-
-router.get('/getDeviceToken', requireAuth, async(req,res)=>{
-    const { userId } = req.query;
-    try {
-        mysqlConnection.query('SELECT deviceToken FROM users WHERE id = ?', [userId], (error, rows, fields)=>{
-            if(error) {
-                res.status(500).json({message: "something went wrong"});
-                console.log(error);
-            }
-            else {
-                if(rows[0] == undefined){
-                    res.status(201).json({message: "no device token"});
-                }else{
-                    res.status(200).json(rows[0]);  
-                }
-            }
-        });
-    } catch (error) {
-        res.status(500).json({message: "something went wrong"});
-        console.log(error);
-    }
-});
-
-router.get('/sendNotification', requireAuth, async(req,res)=>{
-    const { deviceToken, messageTitle, messageBody } = req.query;
-
-    admin.messaging().send({
-        token: deviceToken,
-        notification: {
-            title: messageTitle,
-            body: messageBody
-        }
-    }).then((response)=>{
-        res.status(200).json(response);
-    }).catch((error)=> console.log(error));
 });
 
 
